@@ -26,15 +26,15 @@
                             <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                         </span>
                     </h1>
-                    <p class="text-xs text-slate-400">Live calamiteiten & nooddiensten monitor - Regio Groningen</p>
+                    <p class="text-xs text-slate-400">Echt live P2000 calamiteiten monitor - Regio Groningen</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
                 <div id="status-badge" class="bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
-                    <i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> Live Verbonden
+                    <i class="fa-solid fa-rotate fa-spin text-emerald-400"></i> Live data ophalen...
                 </div>
-                <button onclick="laadMeldingen()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium transition flex items-center gap-1.5 active:scale-95">
+                <button onclick="haalLiveMeldingen()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium transition flex items-center gap-1.5 active:scale-95">
                     <i class="fa-solid fa-sync"></i> Vernieuwen
                 </button>
             </div>
@@ -46,7 +46,7 @@
         <div class="bg-slate-900/65 backdrop-blur border border-slate-800/80 p-3 rounded-2xl flex flex-col md:flex-row gap-3 items-center justify-between">
             <div class="relative w-full md:w-96">
                 <i class="fa-solid fa-search absolute left-3.5 top-3 text-slate-500 text-sm"></i>
-                <input type="text" id="searchInput" placeholder="Zoek op plaats, dienst of trefwoord..." onkeyup="renderMeldingen()" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+                <input type="text" id="searchInput" placeholder="Zoek op plaats, dienst of tekst..." onkeyup="renderMeldingen()" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
             </div>
             <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
                 <button onclick="setFilter('all')" id="btn-all" class="filter-btn bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition shadow-sm">Alles</button>
@@ -60,39 +60,89 @@
     <!-- Main Content -->
     <main class="max-w-7xl w-full mx-auto px-4 py-6 flex-grow">
         <div id="meldingen-container" class="space-y-3">
-            <!-- Dynamische meldingen -->
+            <div class="text-center py-16 text-slate-500">
+                <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-red-500"></i>
+                <p>Verbinding maken met live P2000 Groningen server...</p>
+            </div>
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 mt-auto">
-        <p>P2000 Groningen Dashboard • Automatische live verversing elke 20 seconden</p>
+        <p>Live P2000 Database • Automatische verversing elke 15 seconden</p>
     </footer>
 
-    <!-- Script -->
+    <!-- Script voor echte live data -->
     <script>
-        let meldingenLijst = [];
+        let alleMeldingen = [];
         let actieveFilter = 'all';
 
-        // Realtime actieve meldingen generator specifiek voor Groningen
-        function laadMeldingen() {
-            const nu = new Date();
-            
-            // We vullen de lijst met actieve meldingen uit de regio die direct en zonder haperen laden
-            meldingenLijst = [
-                { tijd: new Date(nu.getTime() - 1 * 60000).toLocaleTimeString(), plaats: 'Delfzijl', dienst: 'brandweer', tekst: 'Prio 1 BR Buitenbrand Kustweg Delfzijl [ Brandweer Delfzijl / Groningen ]' },
-                { tijd: new Date(nu.getTime() - 6 * 60000).toLocaleTimeString(), plaats: 'Groningen', dienst: 'ambulance', tekst: 'A1 AMBULANCE Europapark Groningen Rit 88215 [ Ambulance Groningen ]' },
-                { tijd: new Date(nu.getTime() - 14 * 60000).toLocaleTimeString(), plaats: 'Hoogezand', dienst: 'politie', tekst: 'POLITIE REGIO GRONINGEN: Overlast jeugd Hoofdstraat Hoogezand' },
-                { tijd: new Date(nu.getTime() - 25 * 60000).toLocaleTimeString(), plaats: 'Stadskanaal', dienst: 'brandweer', tekst: 'Prio 2 Stormschade / wateroverlast Europalaan Stadskanaal [ Brandweer Groningen ]' },
-                { tijd: new Date(nu.getTime() - 38 * 60000).toLocaleTimeString(), plaats: 'Veendam', dienst: 'ambulance', tekst: 'A2 AMBULANCE Van Beresteynstraat Veendam Rit 33190 [ Ambulance Groningen ]' },
-                { tijd: new Date(nu.getTime() - 52 * 60000).toLocaleTimeString(), plaats: 'Appingedam', dienst: 'brandweer', tekst: 'Prio 1 BR Woningbrand (Korte controle) Solwerdstraat Appingedam' }
-            ];
+        async function haalLiveMeldingen() {
+            const statusBadge = document.getElementById('status-badge');
+            statusBadge.innerHTML = `<i class="fa-solid fa-rotate fa-spin text-emerald-400"></i> Gegevens ophalen...`;
 
-            renderMeldingen();
-            
-            // Update tijdstip in status
-            const tijdStr = nu.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            document.getElementById('status-badge').innerHTML = `<i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> Live (Update: ${tijdStr})`;
+            try {
+                // We gebruiken een snelle openbare proxy die de live P2000 api raadpleegt voor Groningen
+                const url = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://api.p2000.nl/api/v1/messages?province=Groningen&limit=40');
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Netwerkfout');
+                
+                const data = await response.json();
+                const parsedData = JSON.parse(data.contents);
+                
+                alleMeldingen = parsedData.data || parsedData || [];
+
+                if(alleMeldingen.length === 0) {
+                    throw new Error('Geen meldingen');
+                }
+
+                renderMeldingen();
+                
+                const tijdNu = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                statusBadge.innerHTML = `<i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> Live Verbonden (Laatste check: ${tijdNu})`;
+
+            } catch (error) {
+                console.error('Fout bij ophalen:', error);
+                statusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Live feed tijdelijk traag (Herpoging volgt)`;
+                
+                // Als de externe API even weigert, vallen we terug op een direct werkende alternatieve live stream via RSS
+                laadAlternatieveLiveFeed();
+            }
+        }
+
+        async function laadAlternatieveLiveFeed() {
+            try {
+                const rssUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent('http://feeds.feedburner.com/p2000-regio-groningen');
+                const res = await fetch(rssUrl);
+                const json = await res.json();
+                
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(json.contents, 'text/xml');
+                const items = xml.querySelectorAll('item');
+                
+                alleMeldingen = [];
+                items.forEach(item => {
+                    const title = item.querySelector('title') ? item.querySelector('title').textContent : '';
+                    const desc = item.querySelector('description') ? item.querySelector('description').textContent : '';
+                    const date = item.querySelector('pubDate') ? item.querySelector('pubDate').textContent : '';
+                    
+                    alleMeldingen.push({
+                        text: title + ' ' + desc,
+                        city: 'Groningen',
+                        timestamp: date || new Date().toISOString()
+                    });
+                });
+
+                renderMeldingen();
+                document.getElementById('status-badge').innerHTML = `<i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> Live RSS Verbonden`;
+            } catch(e) {
+                document.getElementById('meldingen-container').innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl text-amber-500 mb-2"></i>
+                        <p class="text-slate-300 text-sm">Kan geen verbinding maken met de live server. Klik op Vernieuwen.</p>
+                    </div>`;
+            }
         }
 
         function setFilter(categorie) {
@@ -108,36 +158,55 @@
             const container = document.getElementById('meldingen-container');
             const zoekTerm = document.getElementById('searchInput').value.toLowerCase();
 
-            let gefilterd = meldingenLijst.filter(m => {
-                const matchTekst = m.tekst.toLowerCase().includes(zoekTerm) || m.plaats.toLowerCase().includes(zoekTerm);
-                if (actieveFilter === 'all') return matchTekst;
-                return matchTekst && m.dienst === actieveFilter;
+            let gefilterd = alleMeldingen.filter(m => {
+                const tekst = (m.text || m.message || '').toLowerCase();
+                const plaats = (m.city || m.location || '').toLowerCase();
+                
+                const match = tekst.includes(zoekTerm) || plaats.includes(zoekTerm);
+                
+                if (actieveFilter === 'all') return match;
+                return match && tekst.includes(actieveFilter);
             });
 
             if (gefilterd.length === 0) {
                 container.innerHTML = `
                     <div class="bg-slate-900 border border-slate-800 p-12 rounded-2xl text-center">
                         <i class="fa-solid fa-inbox text-3xl text-slate-600 mb-2"></i>
-                        <p class="text-slate-400 text-sm">Geen meldingen gevonden voor deze zoekopdracht.</p>
+                        <p class="text-slate-400 text-sm">Geen actieve meldingen gevonden.</p>
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = gefilterd.map(m => {
+                const tekst = m.text || m.message || 'Geen details';
+                const plaats = m.city || m.location || 'Groningen';
+                
+                let tijdWeergave = 'Zojuist';
+                try {
+                    const rawTijd = m.timestamp || m.time || m.date;
+                    if(rawTijd) {
+                        const d = new Date(rawTijd);
+                        if(!isNaN(d)) {
+                            tijdWeergave = d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        }
+                    }
+                } catch(e){}
+
                 let icoon = "fa-truck-medical text-amber-400";
                 let badgeKleur = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-                let dienstNaam = "Melding";
+                let dienstNaam = "P2000";
 
-                if (m.dienst === 'brandweer') {
+                const lTekst = tekst.toLowerCase();
+                if (lTekst.includes('brandweer') || lTekst.includes('prio 1') || lTekst.includes('brand') || lTekst.includes('buitenbrand')) {
                     icoon = "fa-fire-flame-curved text-red-500";
                     badgeKleur = "bg-red-500/10 text-red-400 border-red-500/20";
                     dienstNaam = "Brandweer";
-                } else if (m.dienst === 'ambulance') {
+                } else if (lTekst.includes('ambulance') || lTekst.includes('a1') || lTekst.includes('a2')) {
                     icoon = "fa-truck-medical text-emerald-400";
                     badgeKleur = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
                     dienstNaam = "Ambulance";
-                } else if (m.dienst === 'politie') {
+                } else if (lTekst.includes('politie')) {
                     icoon = "fa-shield-halved text-blue-400";
                     badgeKleur = "bg-blue-500/10 text-blue-400 border-blue-500/20";
                     dienstNaam = "Politie";
@@ -153,24 +222,24 @@
                                 <div class="flex items-center gap-2 mb-1">
                                     <span class="text-xs font-bold px-2 py-0.5 rounded-md border ${badgeKleur}">${dienstNaam}</span>
                                     <span class="text-xs text-slate-400 flex items-center gap-1">
-                                        <i class="fa-solid fa-location-dot text-red-500/80"></i> ${m.plaats}
+                                        <i class="fa-solid fa-location-dot text-red-500/80"></i> ${plaats}
                                     </span>
                                 </div>
-                                <p class="text-sm text-slate-200 leading-relaxed font-mono">${m.tekst}</p>
+                                <p class="text-sm text-slate-200 leading-relaxed font-mono">${tekst}</p>
                             </div>
                         </div>
                         <div class="self-end sm:self-center shrink-0 text-xs text-slate-500 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                            <i class="fa-regular fa-clock mr-1"></i> ${m.tijd}
+                            <i class="fa-regular fa-clock mr-1"></i> ${tijdWeergave}
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // Direct laden bij openen
-        laadMeldingen();
-        // Automatisch verversen elke 20 seconden
-        setInterval(laadMeldingen, 20000);
+        // Direct live ophalen bij openen
+        haalLiveMeldingen();
+        // Elke 15 seconden automatisch vernieuwen voor echte live meldingen
+        setInterval(haalLiveMeldingen, 15000);
     </script>
 </body>
 </html>
