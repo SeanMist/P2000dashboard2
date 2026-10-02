@@ -22,7 +22,7 @@
                     P2000 GRONINGEN - LIVE
                     <span class="inline-block w-3.5 h-3.5 rounded-full bg-emerald-500 animate-ping"></span>
                 </h1>
-                <p class="text-sm text-slate-400">Meest recente 3 meldingen (Automatische update)</p>
+                <p class="text-sm text-slate-400">Meest recente 3 meldingen (Real-time monitor)</p>
             </div>
         </div>
         <div id="status-tijd" class="text-sm font-mono bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-slate-300">
@@ -42,23 +42,36 @@
 
     <!-- Footer -->
     <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-sm text-slate-500">
-        Ververst automatisch elke 20 seconden • Geoptimaliseerd om vanaf afstand te lezen
+        Ververst automatisch elke 15 seconden • Geoptimaliseerd om vanaf afstand te lezen
     </footer>
 
     <!-- JavaScript -->
     <script>
         async function laadLiveData() {
             try {
-                const url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent('http://feeds.feedburner.com/p2000-regio-groningen');
+                // We gebruiken een rechtstreekse feed die gekoppeld is aan de actieve alarmeringen-stroom
+                const feedUrl = 'https://www.alarmeringen.nl/groep/brandweer/groningen/rss/';
+                const url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl);
                 const response = await fetch(url);
                 const data = await response.json();
 
+                let items = [];
                 if (data.status === 'ok' && data.items.length > 0) {
+                    items = data.items;
+                } else {
+                    // Fallback naar de algemene Groningen feed als de brandweer-feed even afwijkt
+                    const backupUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent('http://feeds.feedburner.com/p2000-regio-groningen');
+                    const res2 = await fetch(backupUrl);
+                    const data2 = await res2.json();
+                    items = data2.items || [];
+                }
+
+                if (items.length > 0) {
                     const container = document.getElementById('meldingen');
                     container.innerHTML = '';
 
                     // Pak alleen de eerste 3 (allerrecentste) meldingen
-                    const recenteItems = data.items.slice(0, 3);
+                    const recenteItems = items.slice(0, 3);
 
                     recenteItems.forEach(item => {
                         let tijd = 'Zojuist';
@@ -75,7 +88,7 @@
                         let borderKleur = 'border-slate-800 hover:border-slate-700';
                         
                         const l = tekst.toLowerCase();
-                        if (l.includes('brandweer') || l.includes('prio 1') || l.includes('brand')) {
+                        if (l.includes('brandweer') || l.includes('prio 1') || l.includes('brand') || l.includes('dier')) {
                             badge = '<span class="bg-red-500/20 text-red-300 border border-red-500/30 text-sm font-bold px-3 py-1 rounded-lg">BRANDWEER</span>';
                             icoon = 'fa-fire-flame-curved text-red-500';
                             borderKleur = 'border-red-500/40 bg-red-950/10';
@@ -118,8 +131,8 @@
         // Direct laden bij openen
         laadLiveData();
 
-        // Automatisch verversen elke 20 seconden
-        setInterval(laadLiveData, 20000);
+        // Automatisch verversen elke 15 seconden
+        setInterval(laadLiveData, 15000);
     </script>
 </body>
 </html>
